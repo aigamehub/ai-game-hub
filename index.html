@@ -1,0 +1,1731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Game Hub</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --bg-deep: #020408;
+    --bg-dark: #060d18;
+    --bg-card: #0a1628;
+    --bg-card2: #081220;
+    --accent-cyan: #00f5ff;
+    --accent-green: #39ff14;
+    --accent-orange: #ff6b00;
+    --accent-red: #ff0040;
+    --accent-purple: #b000ff;
+    --text-primary: #e8f4fd;
+    --text-muted: #5a7a99;
+    --text-dim: #2a4a66;
+    --border-glow: rgba(0, 245, 255, 0.3);
+    --border-dim: rgba(0, 245, 255, 0.08);
+    --grid-color: rgba(0, 245, 255, 0.04);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: default;
+  }
+
+  /* ── GRID BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--grid-color) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,245,255,0.07) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 30% at 100% 100%, rgba(176,0,255,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── LOADING SCREEN ── */
+  #loading-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-deep);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+  }
+
+  #loading-screen.hidden { opacity: 0; visibility: hidden; }
+
+  .load-logo {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(2rem, 6vw, 4rem);
+    font-weight: 900;
+    letter-spacing: 0.15em;
+    color: var(--accent-cyan);
+    text-shadow: 0 0 30px rgba(0,245,255,0.8), 0 0 60px rgba(0,245,255,0.4);
+    animation: logoFlicker 2s ease-in-out infinite;
+  }
+
+  @keyframes logoFlicker {
+    0%,100% { text-shadow: 0 0 30px rgba(0,245,255,0.8), 0 0 60px rgba(0,245,255,0.4); }
+    50% { text-shadow: 0 0 50px rgba(0,245,255,1), 0 0 100px rgba(0,245,255,0.6), 0 0 150px rgba(0,245,255,0.2); }
+  }
+
+  .load-bar-wrap {
+    width: min(400px, 80vw);
+    height: 4px;
+    background: var(--border-dim);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .load-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+    border-radius: 2px;
+    width: 0;
+    animation: loadProgress 2.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    box-shadow: 0 0 12px var(--accent-cyan);
+  }
+
+  @keyframes loadProgress { to { width: 100%; } }
+
+  .load-status {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent-cyan);
+    letter-spacing: 0.2em;
+    opacity: 0.7;
+    animation: statusChange 2s steps(1) forwards;
+  }
+
+  @keyframes statusChange {
+    0% { content: 'INITIALIZING SYSTEMS...'; }
+    33% { content: 'LOADING AI ENGINES...'; }
+    66% { content: 'CALIBRATING GAME MATRIX...'; }
+  }
+
+  /* ── MAIN WRAPPER ── */
+  #app {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 60px 20px 40px;
+    text-align: center;
+    position: relative;
+  }
+
+  .header-eyebrow {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    color: var(--accent-cyan);
+    opacity: 0.6;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+
+  .site-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(2.5rem, 8vw, 5.5rem);
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    line-height: 1;
+    background: linear-gradient(135deg, #ffffff 0%, var(--accent-cyan) 40%, var(--accent-purple) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+  }
+
+  .site-title::after {
+    content: 'AI GAME HUB';
+    position: absolute;
+    inset: 0;
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    background: none;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 1px rgba(0,245,255,0.15);
+    transform: translate(3px, 3px);
+    z-index: -1;
+  }
+
+  .site-sub {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    letter-spacing: 0.15em;
+    margin-top: 16px;
+    font-weight: 500;
+  }
+
+  .header-line {
+    width: 200px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+    margin: 32px auto 0;
+  }
+
+  /* ── GAME HUB GRID ── */
+  .hub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(500px, 100%), 1fr));
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 24px 60px;
+  }
+
+  /* ── GAME CARD ── */
+  .game-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s ease, transform 0.3s ease;
+  }
+
+  .game-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--card-accent), transparent);
+    opacity: 0.8;
+  }
+
+  .game-card:hover {
+    border-color: var(--border-glow);
+    transform: translateY(-2px);
+  }
+
+  .card-escape { --card-accent: var(--accent-cyan); }
+  .card-shooter { --card-accent: var(--accent-orange); }
+
+  .card-header {
+    padding: 28px 28px 20px;
+    border-bottom: 1px solid var(--border-dim);
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .card-icon {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    border: 1px solid;
+    border-radius: 4px;
+    position: relative;
+  }
+
+  .card-escape .card-icon {
+    border-color: rgba(0,245,255,0.3);
+    background: rgba(0,245,255,0.05);
+    color: var(--accent-cyan);
+  }
+
+  .card-shooter .card-icon {
+    border-color: rgba(255,107,0,0.3);
+    background: rgba(255,107,0,0.05);
+    color: var(--accent-orange);
+  }
+
+  .card-title-wrap { flex: 1; }
+
+  .card-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-bottom: 4px;
+  }
+
+  .card-escape .card-tag { color: var(--accent-cyan); }
+  .card-shooter .card-tag { color: var(--accent-orange); }
+
+  .card-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-primary);
+  }
+
+  .card-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  .card-body { padding: 24px 28px; }
+
+  /* ── FORM ── */
+  .form-group { margin-bottom: 18px; }
+
+  label {
+    display: block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  input[type="text"],
+  select {
+    width: 100%;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border-dim);
+    border-radius: 2px;
+    padding: 11px 14px;
+    color: var(--text-primary);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  input[type="text"]:focus,
+  select:focus {
+    border-color: var(--card-accent, var(--accent-cyan));
+    box-shadow: 0 0 0 2px rgba(0,245,255,0.1);
+  }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a7a99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+
+  select option {
+    background: #0a1628;
+    color: var(--text-primary);
+  }
+
+  input::placeholder { color: var(--text-dim); }
+
+  /* ── BUTTONS ── */
+  .btn-primary {
+    width: 100%;
+    padding: 14px 24px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    margin-top: 8px;
+  }
+
+  .btn-escape {
+    background: linear-gradient(135deg, rgba(0,245,255,0.15), rgba(0,245,255,0.05));
+    color: var(--accent-cyan);
+    border: 1px solid rgba(0,245,255,0.4);
+  }
+
+  .btn-escape:hover {
+    background: linear-gradient(135deg, rgba(0,245,255,0.25), rgba(0,245,255,0.1));
+    box-shadow: 0 0 20px rgba(0,245,255,0.3), inset 0 0 20px rgba(0,245,255,0.05);
+    transform: translateY(-1px);
+  }
+
+  .btn-shooter {
+    background: linear-gradient(135deg, rgba(255,107,0,0.15), rgba(255,107,0,0.05));
+    color: var(--accent-orange);
+    border: 1px solid rgba(255,107,0,0.4);
+  }
+
+  .btn-shooter:hover {
+    background: linear-gradient(135deg, rgba(255,107,0,0.25), rgba(255,107,0,0.1));
+    box-shadow: 0 0 20px rgba(255,107,0,0.3), inset 0 0 20px rgba(255,107,0,0.05);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .btn-primary:hover::after { opacity: 1; }
+  .btn-primary:active { transform: translateY(0) scale(0.99); }
+
+  /* ── GAME PANEL ── */
+  .game-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: var(--bg-deep);
+    overflow-y: auto;
+    animation: panelIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .game-panel.active { display: block; }
+
+  @keyframes panelIn {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .panel-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* grid bg inside panel too */
+  .game-panel::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--grid-color) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .panel-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-dim);
+  }
+
+  .panel-game-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+
+  .panel-escape .panel-game-title { color: var(--accent-cyan); }
+  .panel-shooter .panel-game-title { color: var(--accent-orange); }
+
+  .btn-back {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    padding: 8px 18px;
+    background: transparent;
+    border: 1px solid var(--border-dim);
+    color: var(--text-muted);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-back:hover {
+    border-color: rgba(255,255,255,0.2);
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.04);
+  }
+
+  /* ── AI LOADING INDICATOR ── */
+  .ai-loading {
+    display: none;
+    align-items: center;
+    gap: 14px;
+    padding: 20px 24px;
+    background: rgba(0,245,255,0.03);
+    border: 1px solid rgba(0,245,255,0.1);
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+
+  .ai-loading.show { display: flex; }
+
+  .ai-loading-dots {
+    display: flex;
+    gap: 5px;
+  }
+
+  .ai-loading-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-cyan);
+    animation: dotPulse 1.4s ease-in-out infinite;
+  }
+
+  .ai-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .ai-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes dotPulse {
+    0%,80%,100% { opacity: 0.2; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1.2); }
+  }
+
+  .ai-loading-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent-cyan);
+    letter-spacing: 0.15em;
+    opacity: 0.7;
+  }
+
+  /* ── STORY OUTPUT ── */
+  .story-area {
+    background: var(--bg-card2);
+    border: 1px solid var(--border-dim);
+    border-radius: 4px;
+    padding: 24px;
+    margin-bottom: 20px;
+    min-height: 120px;
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--text-primary);
+    font-weight: 400;
+    position: relative;
+  }
+
+  .story-area::before {
+    content: 'STORY';
+    position: absolute;
+    top: -1px; left: 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    padding: 3px 10px;
+    background: var(--bg-card2);
+    color: var(--text-dim);
+    border: 1px solid var(--border-dim);
+    border-top: none;
+    border-radius: 0 0 3px 3px;
+  }
+
+  .story-text { white-space: pre-wrap; }
+
+  /* ── PUZZLE AREA ── */
+  .puzzle-area {
+    background: rgba(0,245,255,0.02);
+    border: 1px solid rgba(0,245,255,0.12);
+    border-radius: 4px;
+    padding: 24px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .puzzle-area::before {
+    content: 'PUZZLE';
+    position: absolute;
+    top: -1px; left: 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    padding: 3px 10px;
+    background: var(--bg-dark);
+    color: rgba(0,245,255,0.4);
+    border: 1px solid rgba(0,245,255,0.12);
+    border-top: none;
+    border-radius: 0 0 3px 3px;
+  }
+
+  .puzzle-counter {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+  }
+
+  .puzzle-text {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--text-primary);
+    font-weight: 500;
+    margin-bottom: 20px;
+    white-space: pre-wrap;
+  }
+
+  /* shooter combat area */
+  .combat-area {
+    background: rgba(255,107,0,0.02);
+    border: 1px solid rgba(255,107,0,0.12);
+    border-radius: 4px;
+    padding: 24px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .combat-area::before {
+    content: 'MISSION BRIEFING';
+    position: absolute;
+    top: -1px; left: 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    padding: 3px 10px;
+    background: var(--bg-dark);
+    color: rgba(255,107,0,0.4);
+    border: 1px solid rgba(255,107,0,0.12);
+    border-top: none;
+    border-radius: 0 0 3px 3px;
+  }
+
+  /* ── STATS BAR (shooter) ── */
+  .stats-bar {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .stat-chip {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    padding: 6px 14px;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .stat-chip.health { background: rgba(57,255,20,0.08); color: var(--accent-green); border: 1px solid rgba(57,255,20,0.2); }
+  .stat-chip.wave { background: rgba(255,107,0,0.08); color: var(--accent-orange); border: 1px solid rgba(255,107,0,0.2); }
+  .stat-chip.ammo { background: rgba(0,245,255,0.08); color: var(--accent-cyan); border: 1px solid rgba(0,245,255,0.2); }
+  .stat-chip.score { background: rgba(176,0,255,0.08); color: var(--accent-purple); border: 1px solid rgba(176,0,255,0.2); }
+
+  /* ── INPUT ROW ── */
+  .input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .answer-input {
+    flex: 1;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--border-dim);
+    border-radius: 2px;
+    padding: 12px 16px;
+    color: var(--text-primary);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .answer-input:focus { border-color: var(--accent-cyan); }
+
+  .shooter-answer-input:focus { border-color: var(--accent-orange); }
+
+  .btn-submit {
+    padding: 12px 24px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-submit-escape {
+    background: var(--accent-cyan);
+    color: var(--bg-deep);
+  }
+
+  .btn-submit-escape:hover {
+    box-shadow: 0 0 20px rgba(0,245,255,0.5);
+    filter: brightness(1.1);
+  }
+
+  .btn-submit-shooter {
+    background: var(--accent-orange);
+    color: var(--bg-deep);
+  }
+
+  .btn-submit-shooter:hover {
+    box-shadow: 0 0 20px rgba(255,107,0,0.5);
+    filter: brightness(1.1);
+  }
+
+  .btn-hint {
+    padding: 12px 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    background: transparent;
+    border: 1px solid var(--border-dim);
+    color: var(--text-muted);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-hint:hover {
+    border-color: rgba(176,0,255,0.4);
+    color: var(--accent-purple);
+    box-shadow: 0 0 12px rgba(176,0,255,0.2);
+  }
+
+  /* ── FEEDBACK ── */
+  .feedback-msg {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    padding: 10px 14px;
+    border-radius: 2px;
+    margin-bottom: 14px;
+    display: none;
+  }
+
+  .feedback-msg.show { display: block; }
+  .feedback-msg.correct { background: rgba(57,255,20,0.08); color: var(--accent-green); border: 1px solid rgba(57,255,20,0.2); }
+  .feedback-msg.wrong { background: rgba(255,0,64,0.08); color: var(--accent-red); border: 1px solid rgba(255,0,64,0.2); }
+  .feedback-msg.hint { background: rgba(176,0,255,0.08); color: var(--accent-purple); border: 1px solid rgba(176,0,255,0.2); }
+  .feedback-msg.info { background: rgba(0,245,255,0.06); color: var(--accent-cyan); border: 1px solid rgba(0,245,255,0.15); }
+
+  /* ── COMPLETION SCREEN ── */
+  .completion-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 24px;
+    gap: 24px;
+  }
+
+  .completion-screen.show { display: flex; }
+
+  .completion-icon {
+    font-size: 4rem;
+    animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes bounceIn {
+    from { transform: scale(0) rotate(-20deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
+  }
+
+  .completion-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    font-weight: 900;
+    letter-spacing: 0.08em;
+  }
+
+  .completion-escape .completion-title {
+    background: linear-gradient(135deg, var(--accent-cyan), white);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+  }
+
+  .completion-shooter .completion-title {
+    background: linear-gradient(135deg, var(--accent-orange), white);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .completion-sub {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    max-width: 500px;
+    line-height: 1.6;
+    font-weight: 400;
+  }
+
+  .completion-stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .c-stat {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    border-radius: 4px;
+    padding: 16px 24px;
+    text-align: center;
+  }
+
+  .c-stat-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.8rem;
+    font-weight: 700;
+  }
+
+  .c-stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .completion-escape .c-stat-value { color: var(--accent-cyan); }
+  .completion-shooter .c-stat-value { color: var(--accent-orange); }
+
+  .btn-play-again {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    padding: 14px 40px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .completion-escape .btn-play-again {
+    background: transparent;
+    color: var(--accent-cyan);
+    border: 1px solid var(--accent-cyan);
+  }
+
+  .completion-escape .btn-play-again:hover {
+    background: rgba(0,245,255,0.1);
+    box-shadow: 0 0 20px rgba(0,245,255,0.3);
+  }
+
+  .completion-shooter .btn-play-again {
+    background: transparent;
+    color: var(--accent-orange);
+    border: 1px solid var(--accent-orange);
+  }
+
+  .completion-shooter .btn-play-again:hover {
+    background: rgba(255,107,0,0.1);
+    box-shadow: 0 0 20px rgba(255,107,0,0.3);
+  }
+
+  /* ── PROGRESS (escape room) ── */
+  .puzzle-progress {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .prog-dot {
+    width: 28px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--border-dim);
+    transition: background 0.4s ease;
+  }
+
+  .prog-dot.solved { background: var(--accent-cyan); box-shadow: 0 0 8px rgba(0,245,255,0.5); }
+  .prog-dot.current { background: rgba(0,245,255,0.4); }
+
+  /* shooter wave progress */
+  .wave-progress {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .wave-dot {
+    flex: 1;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--border-dim);
+    transition: background 0.4s ease;
+  }
+
+  .wave-dot.done { background: var(--accent-orange); box-shadow: 0 0 8px rgba(255,107,0,0.5); }
+  .wave-dot.current { background: rgba(255,107,0,0.4); }
+
+  /* ── ESCAPE ROOM GAME AREA ── */
+  #escape-game-area, #shooter-game-area { display: none; }
+  #escape-game-area.show, #shooter-game-area.show { display: block; }
+
+  /* ── CHOICE BUTTONS (shooter) ── */
+  .choices-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .choice-btn {
+    padding: 12px 16px;
+    background: rgba(255,107,0,0.05);
+    border: 1px solid rgba(255,107,0,0.2);
+    border-radius: 3px;
+    color: var(--text-primary);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    line-height: 1.4;
+  }
+
+  .choice-btn:hover {
+    background: rgba(255,107,0,0.12);
+    border-color: rgba(255,107,0,0.5);
+    color: var(--accent-orange);
+  }
+
+  .choice-btn.selected-correct {
+    background: rgba(57,255,20,0.1);
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+  }
+
+  .choice-btn.selected-wrong {
+    background: rgba(255,0,64,0.1);
+    border-color: var(--accent-red);
+    color: var(--accent-red);
+  }
+
+  .choice-btn:disabled { cursor: default; }
+
+  /* ── SCANLINE ── */
+  .scanline {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: rgba(0,245,255,0.03);
+    z-index: 200;
+    animation: scanDown 8s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes scanDown {
+    from { top: -2px; }
+    to { top: 100vh; }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .input-row { flex-wrap: wrap; }
+    .input-row .answer-input { width: 100%; }
+    .choices-grid { grid-template-columns: 1fr; }
+    .card-body { padding: 18px 16px; }
+    .card-header { padding: 20px 16px 16px; }
+    .panel-inner { padding: 20px 16px 60px; }
+    .completion-screen { padding: 40px 16px; }
+  }
+
+  /* Typewriter cursor */
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+  .cursor::after {
+    content: '▮';
+    font-size: 0.8em;
+    color: var(--accent-cyan);
+    animation: blink 1s steps(1) infinite;
+    margin-left: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="scanline"></div>
+
+<!-- ═══════════════ LOADING SCREEN ═══════════════ -->
+<div id="loading-screen">
+  <div class="load-logo">AI GAME HUB</div>
+  <div class="load-bar-wrap"><div class="load-bar"></div></div>
+  <div class="load-status">INITIALIZING SYSTEMS...</div>
+</div>
+
+<!-- ═══════════════ MAIN APP ═══════════════ -->
+<div id="app">
+
+  <header>
+    <div class="header-eyebrow">// NEURAL ENTERTAINMENT PLATFORM v2.0</div>
+    <h1 class="site-title">AI GAME HUB</h1>
+    <p class="site-sub">POWERED BY ARTIFICIAL INTELLIGENCE</p>
+    <div class="header-line"></div>
+  </header>
+
+  <div class="hub-grid">
+
+    <!-- ╔══════════════════════════════╗ -->
+    <!-- ║     AI ESCAPE ROOM CARD      ║ -->
+    <!-- ╚══════════════════════════════╝ -->
+    <div class="game-card card-escape">
+      <div class="card-header">
+        <div class="card-icon">🔐</div>
+        <div class="card-title-wrap">
+          <div class="card-tag">// PUZZLE — STRATEGY</div>
+          <div class="card-title">AI Escape Room</div>
+          <div class="card-desc">Solve AI-generated puzzles to escape themed rooms. Every playthrough is unique.</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label for="er-name">Player Name</label>
+          <input type="text" id="er-name" placeholder="Enter your name..." maxlength="30">
+        </div>
+        <div class="form-group">
+          <label for="er-theme">Theme</label>
+          <select id="er-theme">
+            <option value="Detective Mystery">🔍 Detective Mystery</option>
+            <option value="Cybersecurity">💻 Cybersecurity</option>
+            <option value="Zombie Survival">🧟 Zombie Survival</option>
+            <option value="Space Station">🚀 Space Station</option>
+            <option value="Horror Mansion">👻 Horror Mansion</option>
+            <option value="Ancient Temple">🏛️ Ancient Temple</option>
+            <option value="Prison Break">⛓️ Prison Break</option>
+            <option value="AI Lab Incident">🤖 AI Lab Incident</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="er-difficulty">Difficulty</label>
+          <select id="er-difficulty">
+            <option value="Easy">Easy — For beginners</option>
+            <option value="Medium" selected>Medium — Standard challenge</option>
+            <option value="Hard">Hard — Expert only</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="er-puzzles">Puzzle Count</label>
+          <select id="er-puzzles">
+            <option value="3">3 Puzzles — Quick Run</option>
+            <option value="5" selected>5 Puzzles — Normal</option>
+            <option value="10">10 Puzzles — Full Run</option>
+          </select>
+        </div>
+        <button class="btn-primary btn-escape" onclick="startEscapeRoom()">▶ START GAME</button>
+      </div>
+    </div>
+
+    <!-- ╔══════════════════════════════╗ -->
+    <!-- ║   AI SURVIVAL SHOOTER CARD   ║ -->
+    <!-- ╚══════════════════════════════╝ -->
+    <div class="game-card card-shooter">
+      <div class="card-header">
+        <div class="card-icon">🎯</div>
+        <div class="card-title-wrap">
+          <div class="card-tag">// ACTION — SURVIVAL</div>
+          <div class="card-title">AI Survival Shooter</div>
+          <div class="card-desc">Battle through AI-narrated combat scenarios. Make tactical choices to survive.</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label for="ss-name">Player Name</label>
+          <input type="text" id="ss-name" placeholder="Enter your callsign..." maxlength="30">
+        </div>
+        <div class="form-group">
+          <label for="ss-theme">Theme</label>
+          <select id="ss-theme">
+            <option value="Zombie Apocalypse">🧟 Zombie Apocalypse</option>
+            <option value="Alien Invasion">👽 Alien Invasion</option>
+            <option value="Military Operation">🪖 Military Operation</option>
+            <option value="Cyber War">⚡ Cyber War</option>
+            <option value="Post-Apocalyptic City">🏚️ Post-Apocalyptic City</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="ss-difficulty">Difficulty</label>
+          <select id="ss-difficulty">
+            <option value="Easy">Easy — Casual</option>
+            <option value="Medium" selected>Medium — Standard</option>
+            <option value="Hard">Hard — No mercy</option>
+          </select>
+        </div>
+        <button class="btn-primary btn-shooter" onclick="startShooter()">▶ START MISSION</button>
+      </div>
+    </div>
+
+  </div><!-- /hub-grid -->
+</div><!-- /app -->
+
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--             ESCAPE ROOM PANEL                   -->
+<!-- ═══════════════════════════════════════════════ -->
+<div id="escape-panel" class="game-panel panel-escape">
+  <div class="panel-inner">
+    <div class="panel-topbar">
+      <div class="panel-game-title">🔐 AI ESCAPE ROOM</div>
+      <button class="btn-back" onclick="closePanel('escape-panel')">← BACK TO HUB</button>
+    </div>
+
+    <!-- AI Loading indicator -->
+    <div id="er-ai-loading" class="ai-loading">
+      <div class="ai-loading-dots"><span></span><span></span><span></span></div>
+      <div class="ai-loading-text">AI GENERATING CONTENT...</div>
+    </div>
+
+    <!-- Story area -->
+    <div id="er-story" class="story-area">
+      <div class="story-text" id="er-story-text"></div>
+    </div>
+
+    <!-- Game area -->
+    <div id="escape-game-area">
+      <!-- Progress -->
+      <div id="er-progress" class="puzzle-progress"></div>
+
+      <!-- Puzzle area -->
+      <div class="puzzle-area">
+        <div id="er-puzzle-counter" class="puzzle-counter"></div>
+        <div id="er-puzzle-text" class="puzzle-text"></div>
+        <!-- Feedback -->
+        <div id="er-feedback" class="feedback-msg"></div>
+        <!-- Input row -->
+        <div class="input-row">
+          <input type="text" class="answer-input" id="er-answer" placeholder="Type your answer..." onkeydown="if(event.key==='Enter')submitEscapeAnswer()">
+          <button class="btn-submit btn-submit-escape" onclick="submitEscapeAnswer()">SUBMIT</button>
+          <button class="btn-hint" onclick="getEscapeHint()">HINT</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Completion screen -->
+    <div id="er-completion" class="completion-screen completion-escape">
+      <div class="completion-icon">🏆</div>
+      <div class="completion-title">ESCAPED!</div>
+      <div class="completion-sub" id="er-completion-msg">You've successfully escaped the room!</div>
+      <div class="completion-stats">
+        <div class="c-stat"><div class="c-stat-value" id="er-stat-puzzles">—</div><div class="c-stat-label">PUZZLES SOLVED</div></div>
+        <div class="c-stat"><div class="c-stat-value" id="er-stat-hints">—</div><div class="c-stat-label">HINTS USED</div></div>
+        <div class="c-stat"><div class="c-stat-value" id="er-stat-time">—</div><div class="c-stat-label">TIME</div></div>
+      </div>
+      <button class="btn-play-again" onclick="closePanel('escape-panel')">PLAY AGAIN</button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--           SURVIVAL SHOOTER PANEL                -->
+<!-- ═══════════════════════════════════════════════ -->
+<div id="shooter-panel" class="game-panel panel-shooter">
+  <div class="panel-inner">
+    <div class="panel-topbar">
+      <div class="panel-game-title">🎯 AI SURVIVAL SHOOTER</div>
+      <button class="btn-back" onclick="closePanel('shooter-panel')">← BACK TO HUB</button>
+    </div>
+
+    <!-- AI Loading indicator -->
+    <div id="ss-ai-loading" class="ai-loading">
+      <div class="ai-loading-dots"><span></span><span></span><span></span></div>
+      <div class="ai-loading-text" id="ss-loading-text">AI GENERATING MISSION...</div>
+    </div>
+
+    <!-- Story area -->
+    <div id="ss-story" class="story-area">
+      <div class="story-text" id="ss-story-text"></div>
+    </div>
+
+    <!-- Game area -->
+    <div id="shooter-game-area">
+      <!-- Stats bar -->
+      <div class="stats-bar">
+        <div class="stat-chip health">❤️ HP: <span id="ss-hp">100</span></div>
+        <div class="stat-chip wave">🌊 WAVE: <span id="ss-wave-num">1</span>/5</div>
+        <div class="stat-chip ammo">🔫 AMMO: <span id="ss-ammo">30</span></div>
+        <div class="stat-chip score">⭐ SCORE: <span id="ss-score">0</span></div>
+      </div>
+
+      <!-- Wave progress -->
+      <div id="ss-progress" class="wave-progress"></div>
+
+      <!-- Combat area -->
+      <div class="combat-area">
+        <div id="ss-combat-text" class="puzzle-text"></div>
+        <!-- Feedback -->
+        <div id="ss-feedback" class="feedback-msg"></div>
+        <!-- Choices -->
+        <div id="ss-choices" class="choices-grid"></div>
+      </div>
+
+    </div>
+
+    <!-- Completion screen -->
+    <div id="ss-completion" class="completion-screen completion-shooter">
+      <div class="completion-icon" id="ss-comp-icon">🏅</div>
+      <div class="completion-title" id="ss-comp-title">MISSION COMPLETE!</div>
+      <div class="completion-sub" id="ss-completion-msg"></div>
+      <div class="completion-stats">
+        <div class="c-stat"><div class="c-stat-value" id="ss-stat-waves">—</div><div class="c-stat-label">WAVES SURVIVED</div></div>
+        <div class="c-stat"><div class="c-stat-value" id="ss-stat-score">—</div><div class="c-stat-label">FINAL SCORE</div></div>
+        <div class="c-stat"><div class="c-stat-value" id="ss-stat-hp">—</div><div class="c-stat-label">REMAINING HP</div></div>
+      </div>
+      <button class="btn-play-again" onclick="closePanel('shooter-panel')">NEW MISSION</button>
+    </div>
+
+  </div>
+</div>
+
+
+<script>
+// ═══════════════════════════════════════════════════
+//                  LOADING SCREEN
+// ═══════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  const ls = document.getElementById('loading-screen');
+  const statusEl = ls.querySelector('.load-status');
+  const msgs = ['INITIALIZING SYSTEMS...','LOADING AI ENGINES...','CALIBRATING GAME MATRIX...','READY.'];
+  let i = 0;
+  const iv = setInterval(() => { i++; if(i < msgs.length) statusEl.textContent = msgs[i]; }, 600);
+  setTimeout(() => { clearInterval(iv); ls.classList.add('hidden'); }, 2500);
+});
+
+// ═══════════════════════════════════════════════════
+//                   API HELPER
+// ═══════════════════════════════════════════════════
+async function callClaude(systemPrompt, userPrompt) {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }]
+    })
+  });
+  const data = await response.json();
+  if (!data.content || !data.content[0]) throw new Error("No response from AI");
+  return data.content[0].text;
+}
+
+function showLoading(id) { document.getElementById(id).classList.add('show'); }
+function hideLoading(id) { document.getElementById(id).classList.remove('show'); }
+
+function typewriterEffect(el, text, speed = 18) {
+  el.textContent = '';
+  el.classList.add('cursor');
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i < text.length) {
+      el.textContent += text[i++];
+    } else {
+      clearInterval(interval);
+      el.classList.remove('cursor');
+    }
+  }, speed);
+}
+
+function openPanel(id) {
+  document.getElementById(id).classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePanel(id) {
+  document.getElementById(id).classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+
+// ═══════════════════════════════════════════════════
+//             ESCAPE ROOM — STATE & LOGIC
+// ═══════════════════════════════════════════════════
+const ER = {
+  playerName: '', theme: '', difficulty: '', totalPuzzles: 0,
+  currentPuzzle: 0, hintsUsed: 0, startTime: 0,
+  puzzles: [], currentPuzzleData: null,
+  wrongAttempts: 0
+};
+
+async function startEscapeRoom() {
+  const name = document.getElementById('er-name').value.trim();
+  if (!name) { alert('Please enter your player name!'); return; }
+
+  ER.playerName = name;
+  ER.theme = document.getElementById('er-theme').value;
+  ER.difficulty = document.getElementById('er-difficulty').value;
+  ER.totalPuzzles = parseInt(document.getElementById('er-puzzles').value);
+  ER.currentPuzzle = 0;
+  ER.hintsUsed = 0;
+  ER.puzzles = [];
+  ER.wrongAttempts = 0;
+  ER.startTime = Date.now();
+
+  openPanel('escape-panel');
+  document.getElementById('er-story-text').textContent = '';
+  document.getElementById('escape-game-area').classList.remove('show');
+  document.getElementById('er-completion').classList.remove('show');
+  document.getElementById('er-answer').value = '';
+
+  hideFeedback('er-feedback');
+  showLoading('er-ai-loading');
+
+  try {
+    const sys = `You are a creative escape room game master. Generate immersive, atmospheric content for an AI-powered escape room game. Be vivid, dramatic, and engaging. Difficulty: ${ER.difficulty}.`;
+    const intro = await callClaude(sys,
+      `Create an immersive introduction (3-4 sentences) for an escape room with these details:
+       Player: ${ER.playerName}
+       Theme: ${ER.theme}
+       Difficulty: ${ER.difficulty}
+       Puzzles: ${ER.totalPuzzles}
+       Set the scene dramatically. Address the player by name. End with them needing to solve puzzles to escape.`
+    );
+    hideLoading('er-ai-loading');
+    typewriterEffect(document.getElementById('er-story-text'), intro, 15);
+
+    buildProgressDots();
+    document.getElementById('escape-game-area').classList.add('show');
+
+    await loadEscapePuzzle();
+  } catch(e) {
+    hideLoading('er-ai-loading');
+    document.getElementById('er-story-text').textContent = `Welcome, ${ER.playerName}! You are trapped in the ${ER.theme}. Solve all ${ER.totalPuzzles} puzzles to escape. Good luck!`;
+    buildProgressDots();
+    document.getElementById('escape-game-area').classList.add('show');
+    await loadEscapePuzzle();
+  }
+}
+
+function buildProgressDots() {
+  const prog = document.getElementById('er-progress');
+  prog.innerHTML = '';
+  for (let i = 0; i < ER.totalPuzzles; i++) {
+    const d = document.createElement('div');
+    d.className = 'prog-dot' + (i === 0 ? ' current' : '');
+    d.id = `er-dot-${i}`;
+    prog.appendChild(d);
+  }
+}
+
+function updateProgressDots() {
+  for (let i = 0; i < ER.totalPuzzles; i++) {
+    const d = document.getElementById(`er-dot-${i}`);
+    if (!d) continue;
+    if (i < ER.currentPuzzle) d.className = 'prog-dot solved';
+    else if (i === ER.currentPuzzle) d.className = 'prog-dot current';
+    else d.className = 'prog-dot';
+  }
+}
+
+async function loadEscapePuzzle() {
+  updateProgressDots();
+  document.getElementById('er-puzzle-counter').textContent =
+    `PUZZLE ${ER.currentPuzzle + 1} / ${ER.totalPuzzles}`;
+
+  hideFeedback('er-feedback');
+  document.getElementById('er-answer').value = '';
+  document.getElementById('er-answer').focus();
+  ER.wrongAttempts = 0;
+
+  showLoading('er-ai-loading');
+
+  try {
+    const sys = `You are a puzzle master. Generate escape room puzzles. Difficulty: ${ER.difficulty}. Format EXACTLY:
+PUZZLE: [the puzzle question/riddle]
+ANSWER: [short single answer, 1-3 words max]
+HINT: [one helpful hint without giving away the answer]
+Keep the puzzle fitting the theme. No extra text.`;
+
+    const result = await callClaude(sys,
+      `Generate puzzle #${ER.currentPuzzle + 1} of ${ER.totalPuzzles} for theme: "${ER.theme}". 
+       Difficulty: ${ER.difficulty}. Make it creative and thematic.`
+    );
+    hideLoading('er-ai-loading');
+
+    const lines = result.split('\n');
+    let puzzle = '', answer = '', hint = '';
+    for (const line of lines) {
+      if (line.startsWith('PUZZLE:')) puzzle = line.replace('PUZZLE:', '').trim();
+      else if (line.startsWith('ANSWER:')) answer = line.replace('ANSWER:', '').trim();
+      else if (line.startsWith('HINT:')) hint = line.replace('HINT:', '').trim();
+    }
+
+    if (!puzzle || !answer) {
+      // Fallback puzzles
+      const fallbacks = [
+        { p: "I have cities, but no houses live there. I have mountains, but no trees grow. I have water, but no fish swim. I have roads, but no cars drive. What am I?", a: "map", h: "Think about something flat that represents the world." },
+        { p: "The more you take, the more you leave behind. What am I?", a: "footsteps", h: "Think about walking." },
+        { p: "I speak without a mouth and hear without ears. I have no body but come alive with wind. What am I?", a: "echo", h: "Think about sound bouncing." },
+        { p: "What has keys but no locks, space but no room, and you can enter but can't go inside?", a: "keyboard", h: "You're using one right now." },
+        { p: "The more you have of it, the less you see. What is it?", a: "darkness", h: "Think about light vs absence of light." }
+      ];
+      const fb = fallbacks[ER.currentPuzzle % fallbacks.length];
+      puzzle = fb.p; answer = fb.a; hint = fb.h;
+    }
+
+    ER.currentPuzzleData = { puzzle, answer: answer.toLowerCase().trim(), hint };
+    typewriterEffect(document.getElementById('er-puzzle-text'), puzzle, 20);
+
+  } catch(e) {
+    hideLoading('er-ai-loading');
+    const fallback = { puzzle: "What has to be broken before you can use it?", answer: "egg", hint: "Think about breakfast." };
+    ER.currentPuzzleData = fallback;
+    document.getElementById('er-puzzle-text').textContent = fallback.puzzle;
+  }
+}
+
+async function submitEscapeAnswer() {
+  if (!ER.currentPuzzleData) return;
+  const input = document.getElementById('er-answer').value.trim().toLowerCase();
+  if (!input) return;
+
+  const correct = ER.currentPuzzleData.answer;
+
+  // Fuzzy match
+  const isCorrect = input === correct ||
+    correct.includes(input) ||
+    input.includes(correct) ||
+    levenshtein(input, correct) <= 2;
+
+  if (isCorrect) {
+    showFeedback('er-feedback', '✓ CORRECT! Advancing to next puzzle...', 'correct');
+    ER.currentPuzzle++;
+
+    if (ER.currentPuzzle >= ER.totalPuzzles) {
+      setTimeout(completeEscapeRoom, 1200);
+    } else {
+      setTimeout(async () => {
+        hideFeedback('er-feedback');
+        await loadEscapePuzzle();
+      }, 1200);
+    }
+  } else {
+    ER.wrongAttempts++;
+    if (ER.wrongAttempts >= 3) {
+      showFeedback('er-feedback', `✗ INCORRECT. The answer was: "${correct.toUpperCase()}". Moving on...`, 'wrong');
+      ER.currentPuzzle++;
+      setTimeout(async () => {
+        hideFeedback('er-feedback');
+        if (ER.currentPuzzle >= ER.totalPuzzles) { completeEscapeRoom(); }
+        else { await loadEscapePuzzle(); }
+      }, 2000);
+    } else {
+      showFeedback('er-feedback', `✗ WRONG ANSWER. Try again. (${3 - ER.wrongAttempts} attempts left)`, 'wrong');
+    }
+  }
+  document.getElementById('er-answer').value = '';
+}
+
+async function getEscapeHint() {
+  if (!ER.currentPuzzleData) return;
+  ER.hintsUsed++;
+  showFeedback('er-feedback', `💡 HINT: ${ER.currentPuzzleData.hint}`, 'hint');
+}
+
+function completeEscapeRoom() {
+  const elapsed = Math.floor((Date.now() - ER.startTime) / 1000);
+  const mins = Math.floor(elapsed / 60).toString().padStart(2,'0');
+  const secs = (elapsed % 60).toString().padStart(2,'0');
+
+  document.getElementById('escape-game-area').classList.remove('show');
+  document.getElementById('er-stat-puzzles').textContent = ER.totalPuzzles;
+  document.getElementById('er-stat-hints').textContent = ER.hintsUsed;
+  document.getElementById('er-stat-time').textContent = `${mins}:${secs}`;
+  document.getElementById('er-completion-msg').textContent =
+    `Outstanding work, ${ER.playerName}! You escaped the ${ER.theme} in ${mins}m ${secs}s using ${ER.hintsUsed} hint${ER.hintsUsed !== 1 ? 's' : ''}.`;
+  document.getElementById('er-completion').classList.add('show');
+}
+
+
+// ═══════════════════════════════════════════════════
+//           SURVIVAL SHOOTER — STATE & LOGIC
+// ═══════════════════════════════════════════════════
+const SS = {
+  playerName: '', theme: '', difficulty: '',
+  hp: 100, wave: 0, totalWaves: 5,
+  ammo: 30, score: 0,
+  currentWaveData: null
+};
+
+const DIFF_CONFIG = {
+  Easy:   { hp: 120, ammo: 40, hpLoss: 10, hpGain: 20, scoreGain: 100 },
+  Medium: { hp: 100, ammo: 30, hpLoss: 20, hpGain: 10, scoreGain: 150 },
+  Hard:   { hp: 80,  ammo: 20, hpLoss: 35, hpGain: 5,  scoreGain: 250 }
+};
+
+async function startShooter() {
+  const name = document.getElementById('ss-name').value.trim();
+  if (!name) { alert('Please enter your callsign!'); return; }
+
+  const cfg = DIFF_CONFIG[document.getElementById('ss-difficulty').value] || DIFF_CONFIG.Medium;
+
+  SS.playerName = name;
+  SS.theme = document.getElementById('ss-theme').value;
+  SS.difficulty = document.getElementById('ss-difficulty').value;
+  SS.hp = cfg.hp;
+  SS.ammo = cfg.ammo;
+  SS.score = 0;
+  SS.wave = 0;
+
+  openPanel('shooter-panel');
+  document.getElementById('ss-story-text').textContent = '';
+  document.getElementById('shooter-game-area').classList.remove('show');
+  document.getElementById('ss-completion').classList.remove('show');
+  document.getElementById('ss-choices').innerHTML = '';
+  hideFeedback('ss-feedback');
+
+  updateShooterStats();
+  buildWaveDots();
+
+  showLoading('ss-ai-loading');
+
+  try {
+    const sys = `You are a tactical combat narrator for a survival shooter game. Write vivid, action-packed content. Theme: ${SS.theme}. Difficulty: ${SS.difficulty}. Player: ${SS.playerName}.`;
+    const intro = await callClaude(sys,
+      `Write a dramatic mission briefing (3-4 sentences) for ${SS.playerName} who is entering a ${SS.theme} scenario. Set the stakes high, mention the threat, and give the mission objective. Be intense and atmospheric.`
+    );
+    hideLoading('ss-ai-loading');
+    typewriterEffect(document.getElementById('ss-story-text'), intro, 12);
+    document.getElementById('shooter-game-area').classList.add('show');
+    await loadShooterWave();
+  } catch(e) {
+    hideLoading('ss-ai-loading');
+    document.getElementById('ss-story-text').textContent = `Mission briefing: ${SS.playerName}, you are deployed into a ${SS.theme} situation. Survive 5 waves of enemies. Make tactical decisions wisely. Good luck, soldier.`;
+    document.getElementById('shooter-game-area').classList.add('show');
+    await loadShooterWave();
+  }
+}
+
+function buildWaveDots() {
+  const prog = document.getElementById('ss-progress');
+  prog.innerHTML = '';
+  for (let i = 0; i < SS.totalWaves; i++) {
+    const d = document.createElement('div');
+    d.className = 'wave-dot' + (i === 0 ? ' current' : '');
+    d.id = `ss-dot-${i}`;
+    prog.appendChild(d);
+  }
+}
+
+function updateWaveDots() {
+  for (let i = 0; i < SS.totalWaves; i++) {
+    const d = document.getElementById(`ss-dot-${i}`);
+    if (!d) continue;
+    if (i < SS.wave) d.className = 'wave-dot done';
+    else if (i === SS.wave) d.className = 'wave-dot current';
+    else d.className = 'wave-dot';
+  }
+}
+
+function updateShooterStats() {
+  document.getElementById('ss-hp').textContent = Math.max(0, SS.hp);
+  document.getElementById('ss-wave-num').textContent = SS.wave + 1;
+  document.getElementById('ss-ammo').textContent = SS.ammo;
+  document.getElementById('ss-score').textContent = SS.score;
+}
+
+async function loadShooterWave() {
+  if (SS.wave >= SS.totalWaves) { endShooterGame(true); return; }
+
+  updateWaveDots();
+  updateShooterStats();
+  hideFeedback('ss-feedback');
+  document.getElementById('ss-choices').innerHTML = '';
+
+  showLoading('ss-ai-loading');
+  document.getElementById('ss-loading-text').textContent = `GENERATING WAVE ${SS.wave + 1}...`;
+
+  try {
+    const sys = `You are a tactical shooter game master. Generate combat scenarios with exactly 4 choices. One is clearly best. Format EXACTLY:
+SITUATION: [2-3 sentence combat scenario]
+A: [tactical choice A]
+B: [tactical choice B]  
+C: [tactical choice C]
+D: [tactical choice D]
+BEST: [letter of best choice, just the letter]
+OUTCOME_BEST: [1-sentence result of best choice, positive]
+OUTCOME_BAD: [1-sentence result of bad choice, negative]
+No extra text.`;
+
+    const result = await callClaude(sys,
+      `Wave ${SS.wave + 1} of ${SS.totalWaves} in a ${SS.theme} scenario. Difficulty: ${SS.difficulty}. Player HP: ${SS.hp}. Ammo: ${SS.ammo}. Create an intense combat encounter.`
+    );
+    hideLoading('ss-ai-loading');
+
+    const lines = result.split('\n');
+    let situation = '', choices = {}, best = '', outBest = '', outBad = '';
+    for (const line of lines) {
+      if (line.startsWith('SITUATION:')) situation = line.replace('SITUATION:', '').trim();
+      else if (line.startsWith('A:')) choices.A = line.replace('A:', '').trim();
+      else if (line.startsWith('B:')) choices.B = line.replace('B:', '').trim();
+      else if (line.startsWith('C:')) choices.C = line.replace('C:', '').trim();
+      else if (line.startsWith('D:')) choices.D = line.replace('D:', '').trim();
+      else if (line.startsWith('BEST:')) best = line.replace('BEST:', '').trim();
+      else if (line.startsWith('OUTCOME_BEST:')) outBest = line.replace('OUTCOME_BEST:', '').trim();
+      else if (line.startsWith('OUTCOME_BAD:')) outBad = line.replace('OUTCOME_BAD:', '').trim();
+    }
+
+    if (!situation || !choices.A) throw new Error('Parse failed');
+
+    SS.currentWaveData = { situation, choices, best, outBest, outBad };
+    typewriterEffect(document.getElementById('ss-combat-text'), situation, 14);
+    renderShooterChoices();
+
+  } catch(e) {
+    hideLoading('ss-ai-loading');
+    const fallbackWaves = [
+      { situation: "A horde of enemies closes in from the north. You have limited cover.", choices: {A:"Flank left through the alley",B:"Hold position and fire",C:"Retreat to high ground",D:"Charge directly at them"}, best:"C", outBest:"High ground gives you a tactical advantage!", outBad:"You take heavy damage in the open." },
+      { situation: "An enemy sniper has pinpointed your location from a rooftop.", choices: {A:"Break cover and run",B:"Suppress with full-auto",C:"Use smoke grenade and flank",D:"Stay still and hope"}, best:"C", outBest:"The smoke screen covers your flanking maneuver perfectly.", outBad:"Moving in the open costs you HP." },
+    ];
+    const fb = fallbackWaves[SS.wave % fallbackWaves.length];
+    SS.currentWaveData = fb;
+    document.getElementById('ss-combat-text').textContent = fb.situation;
+    renderShooterChoices();
+  }
+}
+
+function renderShooterChoices() {
+  const grid = document.getElementById('ss-choices');
+  grid.innerHTML = '';
+  const d = SS.currentWaveData;
+  ['A','B','C','D'].forEach(letter => {
+    if (!d.choices[letter]) return;
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.innerHTML = `<strong style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;opacity:0.6">[${letter}]</strong> ${d.choices[letter]}`;
+    btn.onclick = () => handleShooterChoice(letter, btn);
+    grid.appendChild(btn);
+  });
+}
+
+function handleShooterChoice(letter, clickedBtn) {
+  const d = SS.currentWaveData;
+  const cfg = DIFF_CONFIG[SS.difficulty] || DIFF_CONFIG.Medium;
+
+  // Disable all buttons
+  document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+
+  if (letter === d.best) {
+    clickedBtn.classList.add('selected-correct');
+    SS.score += cfg.scoreGain;
+    SS.hp = Math.min(cfg.hp, SS.hp + cfg.hpGain);
+    SS.ammo = Math.max(0, SS.ammo - 2);
+    showFeedback('ss-feedback', `✓ GOOD CALL! ${d.outBest}`, 'correct');
+  } else {
+    clickedBtn.classList.add('selected-wrong');
+    // Highlight correct
+    document.querySelectorAll('.choice-btn')[['A','B','C','D'].indexOf(d.best)]?.classList.add('selected-correct');
+    SS.hp -= cfg.hpLoss;
+    SS.ammo = Math.max(0, SS.ammo - 5);
+    SS.score += Math.floor(cfg.scoreGain * 0.3);
+    showFeedback('ss-feedback', `✗ BAD MOVE! ${d.outBad}`, 'wrong');
+  }
+
+  SS.wave++;
+  updateShooterStats();
+  updateWaveDots();
+
+  if (SS.hp <= 0) {
+    setTimeout(() => endShooterGame(false), 1800);
+  } else if (SS.wave >= SS.totalWaves) {
+    setTimeout(() => endShooterGame(true), 1800);
+  } else {
+    setTimeout(async () => {
+      hideFeedback('ss-feedback');
+      await loadShooterWave();
+    }, 2000);
+  }
+}
+
+function endShooterGame(survived) {
+  document.getElementById('shooter-game-area').classList.remove('show');
+
+  if (survived) {
+    document.getElementById('ss-comp-icon').textContent = '🏅';
+    document.getElementById('ss-comp-title').textContent = 'MISSION COMPLETE!';
+    document.getElementById('ss-completion-msg').textContent =
+      `Outstanding performance, ${SS.playerName}! You survived all ${SS.totalWaves} waves of the ${SS.theme} scenario with ${Math.max(0,SS.hp)} HP remaining.`;
+  } else {
+    document.getElementById('ss-comp-icon').textContent = '💀';
+    document.getElementById('ss-comp-title').textContent = 'KIA';
+    document.getElementById('ss-completion-msg').textContent =
+      `You fought hard, ${SS.playerName}, but the ${SS.theme} claimed you. You survived ${SS.wave} of ${SS.totalWaves} waves.`;
+  }
+
+  document.getElementById('ss-stat-waves').textContent = SS.wave;
+  document.getElementById('ss-stat-score').textContent = SS.score;
+  document.getElementById('ss-stat-hp').textContent = Math.max(0, SS.hp);
+  document.getElementById('ss-completion').classList.add('show');
+}
+
+
+// ═══════════════════════════════════════════════════
+//                   UTILITIES
+// ═══════════════════════════════════════════════════
+function showFeedback(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = `feedback-msg show ${type}`;
+}
+
+function hideFeedback(id) {
+  const el = document.getElementById(id);
+  el.className = 'feedback-msg';
+}
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m+1}, (_,i) => Array.from({length: n+1}, (_,j) => j === 0 ? i : 0));
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+// Escape room answer via keyboard
+document.addEventListener('DOMContentLoaded', () => {
+  const erAns = document.getElementById('er-answer');
+  if (erAns) erAns.addEventListener('keydown', e => { if (e.key === 'Enter') submitEscapeAnswer(); });
+});
+</script>
+</body>
+</html>
